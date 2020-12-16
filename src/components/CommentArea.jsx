@@ -1,7 +1,6 @@
 import React from 'react';
 import PropTypes from 'prop-types';
-import { Modal, Row, Col, Image, Form, Button, ToggleButtonGroup, ToggleButton, Spinner } from 'react-bootstrap';
-import "./CommentArea.css";
+import { Modal, Row, Col, Image, Form, Button, Spinner } from 'react-bootstrap';
 import CommentsList from './CommentsList';
 
 
@@ -10,41 +9,41 @@ class CommentArea extends React.Component {
         errMessage: '',
         loading: false,
         refreshList: false,
-        review: {
-            comment: '',
-            rate: "1",
-            elementId: ""
+        comment: {
+            text: '',
+            userName: '',
         },
     }
-    url = process.env.URL_BACKEND
+    url = process.env.REACT_APP_URL_BACKEND
 
     addComment = async (event) => {
         event.preventDefault()
         const { book } = this.props;
+        const { comment } = this.state;
         this.setState({ loading: true })
-        const { review } = this.state;
-        console.log(review)
         try {
-            let response = await fetch(this.url + "/comments/",
+            let response = await fetch(this.url + "/" + book.asin + "/comments/",
                 {
                     method: 'POST',
-                    body: JSON.stringify(review),
+                    body: JSON.stringify(comment),
                     headers: new Headers({
                         "Content-Type": "application/json",
                     })
                 })
             if (response.ok) {
-                alert('Comment sent!')
                 this.setState({
-                    review: {
-                        comment: '',
-                        rate: "0",
-                        elementId: ""
+                    comment: {
+                        text: '',
+                        userName: '',
                     },
                     errMessage: '',
                     loading: false,
                     refreshList: true
                 })
+
+                setTimeout(() => {
+                    this.setState({ refreshList: false })
+                }, 2000);
             } else {
                 console.log('an error occurred')
                 let error = await response.json()
@@ -55,7 +54,6 @@ class CommentArea extends React.Component {
             }
         } catch (e) {
             console.log(e) // Error
-            alert(e)
             this.setState({
                 errMessage: e.message,
                 loading: false,
@@ -64,41 +62,41 @@ class CommentArea extends React.Component {
     }
 
     commentSection = () => {
-        const { rate, comment } = this.state;
-        console.log(this.url)
+        const { userName, text } = this.state.comment;
         return (
             <Form onSubmit={this.addComment} className="col col-12 m-0">
-                <h4>Your Review</h4>
+                <h4>Your Comment</h4>
                 <Col>
                     <Form.Group >
-                        <Form.Label htmlFor="comment">Comment:</Form.Label>
+                        <Form.Label htmlFor="name">name:</Form.Label>
                         <Form.Control
                             className="col col-12 m-0"
-                            as="textarea"
+                            type="text"
                             rows="3"
-                            name="comment"
-                            placeholder="Write your comment..."
-                            value={comment}
+                            name="userName"
+                            placeholder="User name"
+                            value={userName}
                             onChange={this.updateReviewField}
                             required
                         />
                     </Form.Group>
                 </Col>
                 <Col>
-                    <Row>
-                        <Col>
-                            <Form.Group id="rate" className="d-flex">
-                                <ToggleButtonGroup type="checkbox" name="rate" value={rate} onChange={this.handelRate}>
-                                    <ToggleButton variant="outline-warning font-weight-bold" value={1}>☆</ToggleButton>
-                                    <ToggleButton variant="outline-warning font-weight-bold" value={2}>☆</ToggleButton>
-                                    <ToggleButton variant="outline-warning font-weight-bold" value={3}>☆</ToggleButton>
-                                    <ToggleButton variant="outline-warning font-weight-bold" value={4}>☆</ToggleButton>
-                                    <ToggleButton variant="outline-warning font-weight-bold" value={5}>☆</ToggleButton>
-                                </ToggleButtonGroup>
-                            </Form.Group>
-                        </Col>
-                    </Row>
+                    <Form.Group >
+                        <Form.Label>Comment:</Form.Label>
+                        <Form.Control
+                            className="col col-12 m-0"
+                            as="textarea"
+                            rows="3"
+                            name="text"
+                            placeholder="Write your comment..."
+                            value={text}
+                            onChange={this.updateReviewField}
+                            required
+                        />
+                    </Form.Group>
                 </Col>
+
                 <Button type="submit" variant="outline-primary">Submit</Button>
             </Form>
         );
@@ -109,13 +107,10 @@ class CommentArea extends React.Component {
         this.setState({ review });
     };
     updateReviewField = (event) => {
-        const { book } = this.props;
-        const review = { ...this.state.review }
+        const comment = { ...this.state.comment }
         const name = event.currentTarget.name;
-        review.elementId = book.asin;
-        review[name] = event.currentTarget.value
-        this.setState({ review });
-        console.log(this.state.review)
+        comment[name] = event.currentTarget.value
+        this.setState({ comment });
     }
     render() {
         const { book, onHide, show } = this.props;

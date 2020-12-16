@@ -1,27 +1,44 @@
 import React, { Component } from "react";
-import fantasy from "../books/fantasy.json";
-import history from "../books/history.json";
-import horror from "../books/horror.json";
-import romance from "../books/romance.json";
-import scifi from "../books/scifi.json";
-import BookCard from "./BookCard"
 import { Container } from "react-bootstrap";
 import CategoryItem from "./CategoryItem";
 import CommentArea from "./CommentArea";
+import BookCard from "./BookCard"
+
 
 class LatestReleses extends Component {
   state = {
     category: 0,
-    books: [fantasy, history, horror, romance, scifi],
+    books: { all: [], fantasy: [], history: [], horror: [], romance: [], scifi: [] },
     sort: false,
     search: [],
     search_value: "",
-    category_names: ["fantasy", "history", "horror", "romance", "scifi"],
+    category_names: ["all", "fantasy", "history", "horror", "romance", "scifi"],
     loading: false,
     current_book: {},
     show: false
   };
+  url = process.env.REACT_APP_URL_BACKEND
+  componentDidMount = () => {
+    this.state.category_names.forEach((category) => this.getBooksByCategory(category))
+  }
+  //get books
 
+  getBooksByCategory = async (category) => {
+    const endp = category !== "all" ? ("/?category=" + category) : ""
+    try {
+      const result = await fetch(this.url + endp);
+      if (result.ok) {
+        const allBooks = await result.json();
+        const books = { ...this.state.books }
+        books[category] = allBooks
+        this.setState({ books })
+      } else {
+        console.log("Error occured", result)
+      }
+    } catch (error) {
+      console.log(error)
+    }
+  }
   handleChange = (event) => {
     this.setState({ category: event.target.value });
   };
@@ -32,14 +49,10 @@ class LatestReleses extends Component {
   handleClose = () => this.setState({ show: false });
 
   handleShow = (id) => {
-    let current_book = []
-    this.state.books.forEach(cat => {
-      current_book.push(cat.filter((book) => book.asin === id));
-    });
-    current_book = current_book.flat();
+    let current_book = this.state.books.all.find((book) => book.asin === id);
     this.setState({
       show: true,
-      current_book: current_book[0]
+      current_book
     })
   };
 
@@ -61,26 +74,26 @@ class LatestReleses extends Component {
       <CategoryItem category={category} categoryNames={category_names} onSearch={this.searchBooks} onChange={this.handleChange}></CategoryItem>
     );
   };
-  loadBooks = () => {
-    const { category, books, search, search_value } = this.state;
-    let book;
-    if (search_value.length > 3) {
-      book = (search.length > 0) ? <BookCard books={search} onClick={this.handleShow} /> :
-        <p className="mt-4">No Books found named <strong>{search_value}</strong> ...</p>
-    } else {
-      book = <BookCard books={books[category]} onClick={this.handleShow} />
-    }
-    return (book);
-  }
+  /*  loadBooks = () => {
+     const { category, books, search, search_value } = this.state;
+     let book;
+     if (search_value.length > 3) {
+       book = (search.length > 0) ? <BookCard books={search} onClick={this.handleShow} /> :
+         <p className="mt-4">No Books found named <strong>{search_value}</strong> ...</p>
+     } else {
+       book = <BookCard books={books[category]} onClick={this.handleShow} />
+     }
+     return (book);
+   } */
 
 
   render() {
 
-    const { current_book, show } = this.state;
+    const { current_book, show, category, books, category_names } = this.state;
     return (
       <Container>
         {this.categorySelect()}
-        {this.loadBooks()}
+        {this.state.books.all && <BookCard books={books[category_names[category]]} onClick={this.handleShow} />}
         <CommentArea book={current_book} addComment={this.addComment} onHide={this.handleClose} show={show} />
       </Container>
     )
